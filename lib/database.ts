@@ -44,6 +44,12 @@ export function initDatabase() {
     // Check if we're running in a production environment (Vercel)
     const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
     
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL: process.env.VERCEL,
+      isProduction
+    });
+    
     if (isProduction) {
       // Use in-memory database for production (Vercel)
       console.log('Production environment detected, using in-memory database');
@@ -214,76 +220,89 @@ export const productOperations = {
 
   // Update product
   update: (id: string, product: Partial<Product>) => {
-    const db = getDatabase();
-    const fields = [];
-    const values = [];
-    
-    if (product.title !== undefined) {
-      fields.push('title = ?');
-      values.push(product.title);
+    try {
+      const db = getDatabase();
+      console.log('Updating product:', { id, product });
+      
+      const fields = [];
+      const values = [];
+      
+      if (product.title !== undefined) {
+        fields.push('title = ?');
+        values.push(product.title);
+      }
+      if (product.price !== undefined) {
+        fields.push('price = ?');
+        values.push(product.price);
+      }
+      if (product.currency !== undefined) {
+        fields.push('currency = ?');
+        values.push(product.currency);
+      }
+      if (product.short !== undefined) {
+        fields.push('short = ?');
+        values.push(product.short);
+      }
+      if (product.features !== undefined) {
+        fields.push('features = ?');
+        values.push(JSON.stringify(product.features));
+      }
+      if (product.image !== undefined) {
+        fields.push('image = ?');
+        values.push(product.image);
+      }
+      if (product.stripeUrl !== undefined) {
+        fields.push('stripe_url = ?');
+        values.push(product.stripeUrl);
+      }
+      if (product.category !== undefined) {
+        fields.push('category = ?');
+        values.push(product.category);
+      }
+      if (product.tags !== undefined) {
+        fields.push('tags = ?');
+        values.push(JSON.stringify(product.tags));
+      }
+      if (product.difficulty !== undefined) {
+        fields.push('difficulty = ?');
+        values.push(product.difficulty);
+      }
+      if (product.setupTime !== undefined) {
+        fields.push('setup_time = ?');
+        values.push(product.setupTime);
+      }
+      if (product.popular !== undefined) {
+        fields.push('popular = ?');
+        values.push(product.popular ? 1 : 0);
+      }
+      if (product.featured !== undefined) {
+        fields.push('featured = ?');
+        values.push(product.featured ? 1 : 0);
+      }
+      
+      if (fields.length === 0) {
+        console.log('No fields to update');
+        return null;
+      }
+      
+      fields.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(id);
+      
+      const stmt = db.prepare(`
+        UPDATE products 
+        SET ${fields.join(', ')} 
+        WHERE id = ?
+      `);
+      
+      console.log('Executing update query:', { fields: fields.join(', '), values });
+      const result = stmt.run(...values);
+      console.log('Update result:', result);
+      
+      return result.changes > 0 ? productOperations.getById(id) : null;
+    } catch (error) {
+      console.error('Error in productOperations.update:', error);
+      throw error;
     }
-    if (product.price !== undefined) {
-      fields.push('price = ?');
-      values.push(product.price);
-    }
-    if (product.currency !== undefined) {
-      fields.push('currency = ?');
-      values.push(product.currency);
-    }
-    if (product.short !== undefined) {
-      fields.push('short = ?');
-      values.push(product.short);
-    }
-    if (product.features !== undefined) {
-      fields.push('features = ?');
-      values.push(JSON.stringify(product.features));
-    }
-    if (product.image !== undefined) {
-      fields.push('image = ?');
-      values.push(product.image);
-    }
-    if (product.stripeUrl !== undefined) {
-      fields.push('stripe_url = ?');
-      values.push(product.stripeUrl);
-    }
-    if (product.category !== undefined) {
-      fields.push('category = ?');
-      values.push(product.category);
-    }
-    if (product.tags !== undefined) {
-      fields.push('tags = ?');
-      values.push(JSON.stringify(product.tags));
-    }
-    if (product.difficulty !== undefined) {
-      fields.push('difficulty = ?');
-      values.push(product.difficulty);
-    }
-    if (product.setupTime !== undefined) {
-      fields.push('setup_time = ?');
-      values.push(product.setupTime);
-    }
-    if (product.popular !== undefined) {
-      fields.push('popular = ?');
-      values.push(product.popular ? 1 : 0);
-    }
-    if (product.featured !== undefined) {
-      fields.push('featured = ?');
-      values.push(product.featured ? 1 : 0);
-    }
-    
-    if (fields.length === 0) return null;
-    
-    fields.push('updated_at = CURRENT_TIMESTAMP');
-    values.push(id);
-    
-    const stmt = db.prepare(`
-      UPDATE products 
-      SET ${fields.join(', ')} 
-      WHERE id = ?
-    `);
-    
-    const result = stmt.run(...values);
-    return result.changes > 0 ? productOperations.getById(id) : null;
   },
 
   // Upsert (insert or update) product with specific ID
