@@ -278,6 +278,45 @@ export const productOperations = {
     return result.changes > 0 ? productOperations.getById(id) : null;
   },
 
+  // Upsert (insert or update) product with specific ID
+  upsert: (id: string, product: Product) => {
+    const db = getDatabase();
+    
+    // Try to update first
+    const existingProduct = productOperations.getById(id);
+    if (existingProduct) {
+      return productOperations.update(id, product);
+    }
+    
+    // If doesn't exist, insert with the specified ID
+    const stmt = db.prepare(`
+      INSERT INTO products (
+        id, title, price, currency, short, features, image, 
+        stripe_url, category, tags, difficulty, setup_time, 
+        popular, featured
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(
+      id, // Use the provided ID instead of generating one
+      product.title,
+      product.price,
+      product.currency,
+      product.short,
+      JSON.stringify(product.features),
+      product.image,
+      product.stripeUrl,
+      product.category,
+      JSON.stringify(product.tags),
+      product.difficulty,
+      product.setupTime,
+      product.popular ? 1 : 0,
+      product.featured ? 1 : 0
+    );
+    
+    return { ...product, id };
+  },
+
   // Delete product
   delete: (id: string) => {
     const db = getDatabase();

@@ -20,11 +20,25 @@ export async function GET(request: NextRequest) {
       dbProducts = [];
     }
     
-    // Combine with default products
-    const allProducts = [...defaultProducts, ...dbProducts];
+    // Create a map of database products by ID for quick lookup
+    const dbProductsMap = new Map(dbProducts.map(p => [p.id, p]));
     
-    // Apply search filter to default products if needed
-    const filteredProducts = search 
+    // Replace default products with database versions if they exist, maintaining order
+    const mergedProducts = defaultProducts.map(defaultProduct => {
+      // If this default product has been edited (exists in database), use the database version
+      return dbProductsMap.get(defaultProduct.id) || defaultProduct;
+    });
+    
+    // Add any remaining database products that don't override default products
+    const customProducts = dbProducts.filter(dbProduct => 
+      !defaultProducts.some(defaultProduct => defaultProduct.id === dbProduct.id)
+    );
+    
+    // Combine: default products (with database overrides in place) + custom products
+    const allProducts = [...mergedProducts, ...customProducts];
+    
+    // Apply search filter if needed
+    const finalProducts = search 
       ? allProducts.filter(product => 
           product.title.toLowerCase().includes(search.toLowerCase()) ||
           product.short.toLowerCase().includes(search.toLowerCase()) ||
@@ -34,7 +48,7 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      data: filteredProducts
+      data: finalProducts
     });
   } catch (error) {
     console.error('API Error:', error);

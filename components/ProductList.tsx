@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, Eye, DollarSign, Clock, Target, Star, TrendingUp } from 'lucide-react';
 import type { Product } from '@/lib/products';
+import { ProductEditModal } from './ProductEditModal';
 
 interface ProductListProps {
   refreshTrigger: number;
@@ -11,6 +12,8 @@ interface ProductListProps {
 export function ProductList({ refreshTrigger }: ProductListProps) {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -34,6 +37,20 @@ export function ProductList({ refreshTrigger }: ProductListProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setEditingProduct(product);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleSaveProduct = () => {
+    loadProducts(); // Refresh the product list
   };
 
   const handleDeleteProduct = async (productId: string) => {
@@ -69,6 +86,11 @@ export function ProductList({ refreshTrigger }: ProductListProps) {
 
   const isCustomProduct = (productId: string) => {
     return productId.startsWith('product-');
+  };
+
+  const canDeleteProduct = (product: Product) => {
+    // Can delete if it's a custom product OR if it's an edited default product in database
+    return isCustomProduct(product.id);
   };
 
   if (loading) {
@@ -114,10 +136,16 @@ export function ProductList({ refreshTrigger }: ProductListProps) {
                   </span>
                 </div>
               )}
-              {isCustomProduct(product.id) && (
+              {isCustomProduct(product.id) ? (
                 <div className="absolute bottom-2 left-2">
                   <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
                     Custom
+                  </span>
+                </div>
+              ) : (
+                <div className="absolute bottom-2 left-2">
+                  <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                    Default
                   </span>
                 </div>
               )}
@@ -190,21 +218,20 @@ export function ProductList({ refreshTrigger }: ProductListProps) {
                   View
                 </button>
                 
-                {isCustomProduct(product.id) && (
-                  <>
-                    <button
-                      className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-gray-50 text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                      onClick={() => {/* TODO: Implement edit */}}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors"
-                      onClick={() => handleDeleteProduct(product.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
+                <button
+                  className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-gray-50 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  onClick={() => handleEditProduct(product)}
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                
+                {canDeleteProduct(product) && (
+                  <button
+                    className="flex items-center justify-center gap-1 px-3 py-2 text-sm bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors"
+                    onClick={() => handleDeleteProduct(product.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </div>
@@ -218,6 +245,14 @@ export function ProductList({ refreshTrigger }: ProductListProps) {
           <p className="text-gray-400 text-sm mt-2">Add your first product to get started!</p>
         </div>
       )}
+
+      {/* Edit Modal */}
+      <ProductEditModal
+        product={editingProduct}
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveProduct}
+      />
     </div>
   );
 }
