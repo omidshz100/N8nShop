@@ -3,30 +3,52 @@
 import { useState, useEffect } from 'react';
 import { ProductFilters } from './ProductFilters';
 import { ProductGrid } from './ProductGrid';
-import { 
-  products, 
-  getProductsByCategory, 
-  searchProducts, 
-  getProductsByDifficulty,
-  getProductsByPriceRange,
-  getPopularProducts 
-} from '@/lib/products';
 import type { Product } from '@/lib/products';
 
 export function Catalog() {
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [showPopularOnly, setShowPopularOnly] = useState(false);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 200 });
+  const [loading, setLoading] = useState(true);
+
+  // Load all products from API on component mount
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      const response = await fetch('/api/products');
+      const result = await response.json();
+      
+      if (result.success) {
+        setAllProducts(result.data);
+        setFilteredProducts(result.data);
+      } else {
+        console.error('Failed to load products:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let filtered = products;
+    let filtered = allProducts;
 
     // Apply search filter
     if (searchQuery) {
-      filtered = searchProducts(searchQuery);
+      filtered = filtered.filter(product =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.short.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
     }
 
     // Apply category filter
@@ -50,12 +72,25 @@ export function Catalog() {
     }
 
     setFilteredProducts(filtered);
-  }, [selectedCategory, searchQuery, selectedDifficulty, showPopularOnly, priceRange]);
+  }, [allProducts, selectedCategory, searchQuery, selectedDifficulty, showPopularOnly, priceRange]);
+
+  if (loading) {
+    return (
+      <section id="catalog" className="pt-6 pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading products...</span>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-  <section id="catalog" className="pt-6 pb-20 px-4 sm:px-6 lg:px-8">
+    <section id="catalog" className="pt-6 pb-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-  {/* Catalog header section removed as requested */}
+        {/* Catalog header section removed as requested */}
 
         <ProductFilters
           onCategoryChange={setSelectedCategory}
