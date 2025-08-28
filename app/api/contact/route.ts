@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
 
+// Contact form API - Updated to work with Vercel without external dependencies
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
