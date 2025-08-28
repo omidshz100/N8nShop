@@ -53,17 +53,9 @@ export function Catalog() {
   }, [selectedCategory, searchQuery, selectedDifficulty, showPopularOnly, priceRange]);
 
   return (
-    <section id="catalog" className="py-20 px-4 sm:px-6 lg:px-8">
+  <section id="catalog" className="pt-6 pb-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            n8n Workspace Catalog
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Choose from our extensive collection of {products.length}+ production-ready n8n workflows. 
-            Each workspace includes complete documentation, setup guides, and 30-day support.
-          </p>
-        </div>
+  {/* Catalog header section removed as requested */}
 
         <ProductFilters
           onCategoryChange={setSelectedCategory}
