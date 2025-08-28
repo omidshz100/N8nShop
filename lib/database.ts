@@ -41,14 +41,22 @@ let db: Database.Database;
 
 export function initDatabase() {
   try {
-    // Create data directory if it doesn't exist
-    const fs = require('fs');
-    const dataDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    // Check if we're running in a production environment (Vercel)
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+    
+    if (isProduction) {
+      // Use in-memory database for production (Vercel)
+      console.log('Production environment detected, using in-memory database');
+      db = new Database(':memory:');
+    } else {
+      // Use file-based database for development
+      const fs = require('fs');
+      const dataDir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+      db = new Database(DB_PATH);
     }
-
-    db = new Database(DB_PATH);
     
     // Enable foreign keys
     db.pragma('foreign_keys = ON');
