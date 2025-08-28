@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { PaypalButtons } from './PaypalButtons';
 import { Toast } from './Toast';
+import { useCart } from './CartContext';
 import type { Product } from '@/lib/products';
 import Link from 'next/link';
 
@@ -16,9 +17,22 @@ interface ProductModalProps {
 export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const { addToCart } = useCart();
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    setToastMessage('Product added to cart successfully!');
+    setToastType('success');
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
 
   const handlePaypalSuccess = () => {
     setToastMessage('Payment successful! Check your email for delivery instructions.');
+    setToastType('success');
     setShowToast(true);
     setTimeout(() => {
       onClose();
@@ -27,6 +41,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
 
   const handlePaypalError = (error: any) => {
     setToastMessage('Payment failed. Please try again.');
+    setToastType('error');
     setShowToast(true);
     console.error('PayPal error:', error);
   };
@@ -77,8 +92,8 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
 
               <div className="space-y-4">
                 <button
+                  onClick={handleAddToCart}
                   className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold text-center transition-colors"
-                  // TODO: Implement add to cart logic
                 >
                   Add to Cart
                 </button>
@@ -108,7 +123,7 @@ export function ProductModal({ product, isOpen, onClose }: ProductModalProps) {
         message={toastMessage}
         isVisible={showToast}
         onClose={() => setShowToast(false)}
-        type="success"
+        type={toastType}
       />
     </>
   );

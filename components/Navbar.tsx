@@ -16,7 +16,7 @@ const navigationItems = [
 export function Navbar() {
   const [activeSection, setActiveSection] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { cart } = useCart();
+  const { cart, getTotalItems } = useCart();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -81,9 +81,9 @@ export function Navbar() {
           <div className="hidden md:flex items-center">
             <button className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors">
               <ShoppingCart className="w-5 h-5" />
-              {cart.length > 0 && (
+              {getTotalItems() > 0 && (
                 <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-semibold leading-none text-white bg-blue-600 rounded-full">
-                  {cart.length}
+                  {getTotalItems()}
                 </span>
               )}
             </button>
