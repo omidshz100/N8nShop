@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useCart } from './CartContext';
 import { ExternalLink, Info, Clock, Star, TrendingUp } from 'lucide-react';
 import { ProductModal } from './ProductModal';
 import type { Product } from '@/lib/products';
@@ -11,6 +12,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addToCart } = useCart();
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -64,7 +66,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <div className="space-y-2">
             <button
               className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-              // TODO: Implement add to cart logic
+              onClick={() => addToCart(product)}
             >
               Add to Cart
             </button>
