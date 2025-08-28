@@ -1,7 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, MessageSquare, User } from 'lucide-react';
+import { Mail, MessageSquare, User, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+
+interface FormState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  message: string;
+}
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -10,25 +15,47 @@ export function Contact() {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formState, setFormState] = useState<FormState>({
+    status: 'idle',
+    message: ''
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Option 1: mailto (current implementation)
-    const subject = encodeURIComponent('Workspace Inquiry');
-    const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
-    window.location.href = `mailto:omidfreelance100@gmail.com?subject=${subject}&body=${body}`;
-    
-    // Option 2: Formspree (commented out - replace with your endpoint)
-    // fetch('https://formspree.io/f/your-form-id', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(formData)
-    // });
-    
-    // Reset form
-    setFormData({ name: '', email: '', message: '' });
+    setFormState({ status: 'loading', message: '' });
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setFormState({
+          status: 'success',
+          message: result.message || 'Thank you for your message! We will get back to you soon.'
+        });
+        // Reset form on success
+        setFormData({ name: '', email: '', message: '' });
+      } else {
+        setFormState({
+          status: 'error',
+          message: result.error || 'Something went wrong. Please try again.'
+        });
+      }
+    } catch (error) {
+      console.error('Contact form error:', error);
+      setFormState({
+        status: 'error',
+        message: 'Network error. Please check your connection and try again.'
+      });
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -36,6 +63,11 @@ export function Contact() {
       ...formData,
       [e.target.name]: e.target.value
     });
+    
+    // Clear form state when user starts typing again
+    if (formState.status !== 'idle') {
+      setFormState({ status: 'idle', message: '' });
+    }
   };
 
   return (
@@ -51,6 +83,21 @@ export function Contact() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
+          {/* Status Messages */}
+          {formState.status === 'success' && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <p className="text-green-800">{formState.message}</p>
+            </div>
+          )}
+
+          {formState.status === 'error' && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <p className="text-red-800">{formState.message}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -65,7 +112,8 @@ export function Contact() {
                   value={formData.name}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={formState.status === 'loading'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Your name"
                 />
               </div>
@@ -81,7 +129,8 @@ export function Contact() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  disabled={formState.status === 'loading'}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="your.email@example.com"
                 />
               </div>
@@ -99,17 +148,28 @@ export function Contact() {
                 onChange={handleChange}
                 required
                 rows={6}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical"
+                disabled={formState.status === 'loading'}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-vertical disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Tell us about your automation needs..."
               ></textarea>
             </div>
             
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              disabled={formState.status === 'loading'}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
             >
-              <Mail className="w-5 h-5" />
-              Send Message
+              {formState.status === 'loading' ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-5 h-5" />
+                  Send Message
+                </>
+              )}
             </button>
           </form>
         </div>
